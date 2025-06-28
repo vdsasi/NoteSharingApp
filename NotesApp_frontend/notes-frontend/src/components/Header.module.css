@@ -1,0 +1,31 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #CD5656;
+  border-bottom: 1px solid #ddd;
+  height: 60px;
+  color: white;
+  font-family: "Ancizar Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 1000;
+  font-style: normal;
+}
+
+.left {
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  margin-left: 0.5rem;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+}

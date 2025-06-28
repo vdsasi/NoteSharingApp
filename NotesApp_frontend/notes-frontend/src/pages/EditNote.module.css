@@ -1,0 +1,121 @@
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 5rem;
+  padding-top: 3rem;
+  padding-bottom: 2.5rem;
+  background-color: #FFF2EB;
+  border-radius: 0.75rem;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid black;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.heading {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+  margin-top: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.quillEditor {
+  margin-bottom: 2rem;
+}
+
+.tagsContainer {
+  margin-top: 1.5rem;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag {
+  background-color: #FFDAB9;
+  padding: 0.4rem 0.8rem;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: large;
+}
+
+.tagInputRow {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.tagInput {
+  flex-grow: 1;
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.addTagBtn {
+  background-color: #2563eb;
+  color: white;
+  width: 100px;
+  padding: 0.8rem 1.6rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.addTagBtn:hover {
+  background-color: #1d4ed8;
+}
+
+.updateBtn {
+  background-color: #10b981;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 2rem auto 0;
+}
+
+.updateBtn:hover {
+  background-color: #059669;
+}
+
+.quillEditor :global(.ql-editor) {
+  min-height: 100px;
+}
