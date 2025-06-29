@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./ShareModal.module.css";
 import { searchUsers } from "../services/UserService";
+import { FaUser } from "react-icons/fa";
 
 const ShareModal = ({ isOpen, onClose, collaborators, onAdd, onRemove, isOwner, loading, error }) => {
   const [username, setUsername] = React.useState("");
@@ -58,6 +59,7 @@ const ShareModal = ({ isOpen, onClose, collaborators, onAdd, onRemove, isOwner, 
           {collaborators.length === 0 && <div>No collaborators yet.</div>}
           {collaborators.map((c) => (
             <div key={c.id} className={styles.collabItem}>
+              <FaUser className={styles.userIcon} />
               <span>{c.username} ({c.email})</span>
               {isOwner && (
                 <button onClick={() => onRemove(c.username)} className={styles.removeBtn} disabled={loading}>
