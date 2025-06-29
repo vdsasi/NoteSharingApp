@@ -99,3 +99,26 @@ func (ac *AuthController) ChangePassword(c *gin.Context) {
 
     c.JSON(http.StatusOK, gin.H{"message": "Password changed successfully."})
 }
+
+func (ac *AuthController) SearchUsers(c *gin.Context) {
+    query := c.Query("query")
+    if len(query) < 2 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Query too short"})
+        return
+    }
+    users, err := ac.authService.SearchUsers(query)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    // Only return id, username, email
+    var result []gin.H
+    for _, u := range users {
+        result = append(result, gin.H{
+            "id": u.ID.Hex(),
+            "username": u.Username,
+            "email": u.Email,
+        })
+    }
+    c.JSON(http.StatusOK, result)
+}

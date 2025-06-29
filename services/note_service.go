@@ -70,11 +70,14 @@ func (s *NoteService) GetNote(noteID, userID primitive.ObjectID) (models.NoteRes
     var note models.Note
     err := config.DB.Collection("notes").FindOne(ctx, bson.M{
         "_id": noteID,
-        "userId": userID,
+        "$or": []bson.M{
+            {"userId": userID},
+            {"collaborators": userID},
+        },
     }).Decode(&note)
     
     if err != nil {
-        return models.NoteResponse{}, errors.New("note not found")
+        return models.NoteResponse{}, errors.New("note not found or access denied")
     }
 
     return s.noteToResponse(note), nil
@@ -83,15 +86,18 @@ func (s *NoteService) GetNote(noteID, userID primitive.ObjectID) (models.NoteRes
 func (s *NoteService) UpdateNote(noteID, userID primitive.ObjectID, req models.NoteRequest) (models.NoteResponse, error) {
     ctx := context.Background()
     
-    // Create version before updating
+    // Check if user is owner or collaborator
     var currentNote models.Note
     err := config.DB.Collection("notes").FindOne(ctx, bson.M{
         "_id": noteID,
-        "userId": userID,
+        "$or": []bson.M{
+            {"userId": userID},
+            {"collaborators": userID},
+        },
     }).Decode(&currentNote)
     
     if err != nil {
-        return models.NoteResponse{}, errors.New("note not found")
+        return models.NoteResponse{}, errors.New("note not found or access denied")
     }
 
     // Save version
@@ -117,11 +123,14 @@ func (s *NoteService) UpdateNote(noteID, userID primitive.ObjectID, req models.N
 
     result, err := config.DB.Collection("notes").UpdateOne(ctx, bson.M{
         "_id": noteID,
-        "userId": userID,
+        "$or": []bson.M{
+            {"userId": userID},
+            {"collaborators": userID},
+        },
     }, update)
 
     if err != nil || result.MatchedCount == 0 {
-        return models.NoteResponse{}, errors.New("failed to update note")
+        return models.NoteResponse{}, errors.New("failed to update note or access denied")
     }
 
     // Return updated note
@@ -363,6 +372,74 @@ func (s *NoteService) AutoSaveNote(noteID, userID primitive.ObjectID, req models
     return s.GetNote(noteID, userID)
 }
 
+func (s *NoteService) AddCollaborator(noteID, ownerID, collaboratorID primitive.ObjectID) error {
+    ctx := context.Background()
+    // Only owner can add
+    result := config.DB.Collection("notes").FindOneAndUpdate(ctx, bson.M{
+        "_id": noteID,
+        "userId": ownerID,
+    }, bson.M{
+        "$addToSet": bson.M{"collaborators": collaboratorID},
+    })
+    if result.Err() != nil {
+        return errors.New("not found or not owner")
+    }
+    return nil
+}
+
+// RemoveCollaborator removes a collaborator from a note (only owner can do this)
+func (s *NoteService) RemoveCollaborator(noteID, ownerID, collaboratorID primitive.ObjectID) error {
+    ctx := context.Background()
+    result := config.DB.Collection("notes").FindOneAndUpdate(ctx, bson.M{
+        "_id": noteID,
+        "userId": ownerID,
+    }, bson.M{
+        "$pull": bson.M{"collaborators": collaboratorID},
+    })
+    if result.Err() != nil {
+        return errors.New("not found or not owner")
+    }
+    return nil
+}
+
+// ListCollaborators returns the list of collaborators for a note
+func (s *NoteService) ListCollaborators(noteID, userID primitive.ObjectID) ([]models.UserProfileDto, error) {
+    ctx := context.Background()
+    var note models.Note
+    err := config.DB.Collection("notes").FindOne(ctx, bson.M{
+        "_id": noteID,
+        "$or": []bson.M{
+            {"userId": userID},
+            {"collaborators": userID},
+        },
+    }).Decode(&note)
+    if err != nil {
+        return nil, errors.New("note not found or access denied")
+    }
+    if len(note.Collaborators) == 0 {
+        return []models.UserProfileDto{}, nil
+    }
+    // Fetch user info for each collaborator
+    var users []models.User
+    cursor, err := config.DB.Collection("users").Find(ctx, bson.M{"_id": bson.M{"$in": note.Collaborators}})
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(ctx)
+    if err = cursor.All(ctx, &users); err != nil {
+        return nil, err
+    }
+    var result []models.UserProfileDto
+    for _, u := range users {
+        result = append(result, models.UserProfileDto{
+            ID: u.ID.Hex(),
+            Username: u.Username,
+            Email: u.Email,
+        })
+    }
+    return result, nil
+}
+
 func (s *NoteService) noteToResponse(note models.Note) models.NoteResponse {
     return models.NoteResponse{
         ID:              note.ID.Hex(),
@@ -374,5 +451,6 @@ func (s *NoteService) noteToResponse(note models.Note) models.NoteResponse {
         Tags:            note.Tags,
         CreatedAt:       note.CreatedAt,
         UpdatedAt:       note.UpdatedAt,
+        UserID:          note.UserID.Hex(), // Add this line
     }
 }

@@ -6,16 +6,17 @@ import (
 )
 
 type Note struct {
-    ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-    Title           string             `bson:"title" json:"title"`
-    Content         string             `bson:"content" json:"content"`
-    Pinned          bool               `bson:"pinned" json:"pinned"`
-    Trashed         bool               `bson:"trashed" json:"trashed"`
-    AutoSaveEnabled bool               `bson:"autoSaveEnabled" json:"autoSaveEnabled"`
-    UserID          primitive.ObjectID `bson:"userId" json:"userId"`
-    Tags            []string           `bson:"tags" json:"tags"`
-    CreatedAt       time.Time          `bson:"createdAt" json:"createdAt"`
-    UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
+    ID              primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
+    Title           string               `bson:"title" json:"title"`
+    Content         string               `bson:"content" json:"content"`
+    Pinned          bool                 `bson:"pinned" json:"pinned"`
+    Trashed         bool                 `bson:"trashed" json:"trashed"`
+    AutoSaveEnabled bool                 `bson:"autoSaveEnabled" json:"autoSaveEnabled"`
+    UserID          primitive.ObjectID   `bson:"userId" json:"userId"`
+    Tags            []string             `bson:"tags" json:"tags"`
+    Collaborators   []primitive.ObjectID `bson:"collaborators" json:"collaborators"`
+    CreatedAt       time.Time            `bson:"createdAt" json:"createdAt"`
+    UpdatedAt       time.Time            `bson:"updatedAt" json:"updatedAt"`
 }
 
 type NoteRequest struct {
@@ -35,6 +36,7 @@ type NoteResponse struct {
     Tags            []string  `json:"tags"`
     CreatedAt       time.Time `json:"createdAt"`
     UpdatedAt       time.Time `json:"updatedAt"`
+    UserID          string    `json:"userId"`
 }
 
 type NoteVersion struct {
@@ -50,4 +52,16 @@ type NoteVersionResponse struct {
     Title       string    `json:"title"`
     Content     string    `json:"content"`
     VersionedAt time.Time `json:"versionedAt"`
+}
+
+// AddCollaboratorRequest is the request body for adding a collaborator
+// { "username": "collab_username" }
+type AddCollaboratorRequest struct {
+    Username string `json:"username" binding:"required"`
+}
+
+// RemoveCollaboratorRequest is the request body for removing a collaborator
+// { "username": "collab_username" }
+type RemoveCollaboratorRequest struct {
+    Username string `json:"username" binding:"required"`
 }

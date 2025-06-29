@@ -11,4 +11,7 @@ export const restoreNoteById = (id) => axios.post(`${BASE_URL}/${id}/restore`);
 export const getNoteVersions = (noteId) => axios.get(`${BASE_URL}/${noteId}/versions`);
 export const restoreNoteVersion = (noteId, versionId) =>
   axios.post(`${BASE_URL}/version-restore/${noteId}/${versionId}`);
+export const getCollaborators = (noteId) => axios.get(`${BASE_URL}/${noteId}/collaborators`);
+export const addCollaborator = (noteId, username) => axios.post(`${BASE_URL}/${noteId}/share`, { username });
+export const removeCollaborator = (noteId, username) => axios.delete(`${BASE_URL}/${noteId}/share`, { data: { username } });
 

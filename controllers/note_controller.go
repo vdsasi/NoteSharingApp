@@ -4,7 +4,9 @@ import (
     "net/http"
     "notes-app/models"
     "notes-app/services"
+    "notes-app/config"
     "github.com/gin-gonic/gin"
+    "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -236,4 +238,80 @@ func (nc *NoteController) AutoSave(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, note)
+}
+
+// ShareNote adds a collaborator (only owner)
+func (nc *NoteController) ShareNote(c *gin.Context) {
+    user := c.MustGet("user").(*models.User)
+    noteID, err := primitive.ObjectIDFromHex(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid note ID"})
+        return
+    }
+    var req models.AddCollaboratorRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    // Find collaborator user by username
+    var collab models.User
+    err = config.DB.Collection("users").FindOne(c, bson.M{"username": req.Username}).Decode(&collab)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Collaborator not found"})
+        return
+    }
+    if collab.ID == user.ID {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot add yourself as collaborator"})
+        return
+    }
+    err = nc.noteService.AddCollaborator(noteID, user.ID, collab.ID)
+    if err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"message": "Collaborator added"})
+}
+
+// RemoveCollaborator removes a collaborator (only owner)
+func (nc *NoteController) RemoveCollaborator(c *gin.Context) {
+    user := c.MustGet("user").(*models.User)
+    noteID, err := primitive.ObjectIDFromHex(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid note ID"})
+        return
+    }
+    var req models.RemoveCollaboratorRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    // Find collaborator user by username
+    var collab models.User
+    err = config.DB.Collection("users").FindOne(c, bson.M{"username": req.Username}).Decode(&collab)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Collaborator not found"})
+        return
+    }
+    err = nc.noteService.RemoveCollaborator(noteID, user.ID, collab.ID)
+    if err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"message": "Collaborator removed"})
+}
+
+// ListCollaborators returns the list of collaborators for a note
+func (nc *NoteController) ListCollaborators(c *gin.Context) {
+    user := c.MustGet("user").(*models.User)
+    noteID, err := primitive.ObjectIDFromHex(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid note ID"})
+        return
+    }
+    collabs, err := nc.noteService.ListCollaborators(noteID, user.ID)
+    if err != nil {
+        c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, collabs)
 }

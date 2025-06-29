@@ -41,6 +41,7 @@ func main() {
         authRoutes.POST("/logout", authController.Logout)
         authRoutes.GET("/me", middleware.AuthMiddleware(authService), authController.GetCurrentUser)
         authRoutes.POST("/change-password", middleware.AuthMiddleware(authService), authController.ChangePassword)
+        authRoutes.GET("/search-users", middleware.AuthMiddleware(authService), authController.SearchUsers)
     }
 
     noteRoutes := router.Group("/api/notes")
@@ -58,6 +59,9 @@ func main() {
         noteRoutes.POST("/version-restore/:noteId/:versionId", noteController.RestoreVersion)
         noteRoutes.GET("/filter", noteController.FilterByTag)
         noteRoutes.PUT("/autosave/:noteId", noteController.AutoSave)
+        noteRoutes.GET(":id/collaborators", noteController.ListCollaborators)
+        noteRoutes.POST(":id/share", noteController.ShareNote)
+        noteRoutes.DELETE(":id/share", noteController.RemoveCollaborator)
     }
 
     log.Println("Server starting on :8080")

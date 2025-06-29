@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { getNoteById, updateNote } from "../services/NoteService";
+import { getNoteById, updateNote, getCollaborators, addCollaborator, removeCollaborator } from "../services/NoteService";
+import AuthService from "../services/AuthService";
+import ShareModal from "../components/ShareModal";
 import styles from "./EditNote.module.css";
 
 const EditNote = () => {
@@ -13,6 +15,13 @@ const EditNote = () => {
   const [content, setContent] = useState("");
   const [tags, setTags] = useState([]);
   const [newTag, setNewTag] = useState("");
+  const [showShare, setShowShare] = useState(false);
+  const [collaborators, setCollaborators] = useState([]);
+  const [isOwner, setIsOwner] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     getNoteById(id)
@@ -33,11 +42,23 @@ const EditNote = () => {
         } else {
           setTags([]);
         }
+        setIsOwner(note.userId === currentUser?.id);
+        setNotFound(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch note:", err);
+        if (err?.response?.status === 404 || err?.response?.status === 403) {
+          setNotFound(true);
+        } else {
+          console.error("Failed to fetch note:", err);
+        }
       });
-  }, [id]);
+    // Fetch collaborators
+    getCollaborators(id).then(res => setCollaborators(res.data)).catch(() => setCollaborators([]));
+  }, [id, currentUser]);
+
+  useEffect(() => {
+    AuthService.getProfile().then(setCurrentUser).catch(() => setCurrentUser(null));
+  }, []);
 
   const handleAddTag = () => {
     const trimmedTag = newTag.trim();
@@ -61,6 +82,39 @@ const EditNote = () => {
         console.error("Failed to update note:", err);
       });
   };
+
+  const handleAddCollaborator = async (username) => {
+    setShareLoading(true); setShareError("");
+    try {
+      await addCollaborator(id, username);
+      const res = await getCollaborators(id);
+      setCollaborators(res.data);
+    } catch (e) {
+      setShareError(e?.response?.data?.error || "Failed to add collaborator");
+    }
+    setShareLoading(false);
+  };
+  const handleRemoveCollaborator = async (username) => {
+    setShareLoading(true); setShareError("");
+    try {
+      await removeCollaborator(id, username);
+      const res = await getCollaborators(id);
+      setCollaborators(res.data);
+    } catch (e) {
+      setShareError(e?.response?.data?.error || "Failed to remove collaborator");
+    }
+    setShareLoading(false);
+  };
+
+  if (notFound) {
+    return (
+      <div className={styles.container}>
+        <h2 className={styles.heading}>Access Denied</h2>
+        <p>You do not have access to this note or it does not exist.</p>
+        <Link to="/dashboard" className={styles.backLink}>&larr; Back to Dashboard</Link>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -118,6 +172,19 @@ const EditNote = () => {
       <button onClick={handleUpdateNote} className={styles.updateBtn}>
         Update Note
       </button>
+      <button onClick={() => setShowShare(true)} className={styles.updateBtn} style={{marginBottom: 12}}>
+        Share
+      </button>
+      <ShareModal
+        isOpen={showShare}
+        onClose={() => setShowShare(false)}
+        collaborators={collaborators}
+        onAdd={handleAddCollaborator}
+        onRemove={handleRemoveCollaborator}
+        isOwner={isOwner}
+        loading={shareLoading}
+        error={shareError}
+      />
     </div>
   );
 };

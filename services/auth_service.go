@@ -147,6 +147,25 @@ func (s *AuthService) ChangePassword(userID primitive.ObjectID, req models.Chang
     return err
 }
 
+func (s *AuthService) SearchUsers(query string) ([]models.User, error) {
+    ctx := context.Background()
+    // Search by username or email, case-insensitive, partial match
+    filter := bson.M{"$or": []bson.M{
+        {"username": bson.M{"$regex": query, "$options": "i"}},
+        {"email": bson.M{"$regex": query, "$options": "i"}},
+    }}
+    cursor, err := config.DB.Collection("users").Find(ctx, filter)
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(ctx)
+    var users []models.User
+    if err := cursor.All(ctx, &users); err != nil {
+        return nil, err
+    }
+    return users, nil
+}
+
 func generateSessionID() string {
     bytes := make([]byte, 32)
     rand.Read(bytes)
